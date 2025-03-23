@@ -3,300 +3,144 @@ import { useDesign } from "../lib/stores/useDesign";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Slider } from "./ui/slider";
-import { Toggle } from "./ui/toggle";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "./ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import FurnitureControls from "./FurnitureControls";
 
-// Available furniture types
-const furnitureTypes = [
-  { id: "sofa", name: "Sofa" },
-  { id: "chair", name: "Chair" },
-  { id: "table", name: "Table" },
-  { id: "bed", name: "Bed" },
-  { id: "desk", name: "Desk" },
-  { id: "cabinet", name: "Cabinet" },
-  { id: "bookshelf", name: "Bookshelf" },
-  { id: "lamp", name: "Lamp" },
-  { id: "plant", name: "Plant" },
-  { id: "rug", name: "Rug" },
+const FURNITURE_TEMPLATES = [
+  { type: "Sofa", color: "#8B4513", dimensions: { width: 2.0, height: 0.8, depth: 0.9 } },
+  { type: "Chair", color: "#A0522D", dimensions: { width: 0.8, height: 1.0, depth: 0.8 } },
+  { type: "Table", color: "#D2B48C", dimensions: { width: 1.2, height: 0.75, depth: 0.8 } },
+  { type: "Bed", color: "#F5DEB3", dimensions: { width: 1.8, height: 0.5, depth: 2.1 } },
+  { type: "Cabinet", color: "#A52A2A", dimensions: { width: 1.0, height: 1.8, depth: 0.5 } },
+  { type: "Desk", color: "#CD853F", dimensions: { width: 1.4, height: 0.75, depth: 0.7 } },
+  { type: "Lamp", color: "#FFD700", dimensions: { width: 0.4, height: 1.5, depth: 0.4 } },
+  { type: "Bookshelf", color: "#8B4513", dimensions: { width: 1.2, height: 2.0, depth: 0.4 } },
 ];
 
-const FurniturePanel = () => {
-  const { 
-    roomData, 
-    addFurniture, 
-    removeFurniture, 
-    updateFurniturePosition,
-    updateFurnitureRotation,
-    updateFurnitureColor
-  } = useDesign();
+const FurniturePanel: React.FC = () => {
+  const { roomData, addFurniture } = useDesign();
+  const [customType, setCustomType] = useState("");
+  const [customColor, setCustomColor] = useState("#FFFFFF");
   
-  const [selectedFurnitureIndex, setSelectedFurnitureIndex] = useState<number | null>(null);
-  const [newFurnitureType, setNewFurnitureType] = useState("sofa");
-  const [newFurniturePosition, setNewFurniturePosition] = useState({ x: 0, y: 0, z: 0 });
-  const [newFurnitureRotation, setNewFurnitureRotation] = useState(0);
-  const [newFurnitureColor, setNewFurnitureColor] = useState("#8B4513");
-  
-  const handleAddFurniture = () => {
-    addFurniture({
-      type: newFurnitureType,
-      position: newFurniturePosition,
-      rotation: newFurnitureRotation,
-      color: newFurnitureColor,
-      scale: 1
-    });
-  };
-  
-  const handleSelectFurniture = (index: number) => {
-    if (selectedFurnitureIndex === index) {
-      setSelectedFurnitureIndex(null);
-    } else {
-      setSelectedFurnitureIndex(index);
-      const furniture = roomData.furniture[index];
-      setNewFurniturePosition({ ...furniture.position });
-      setNewFurnitureRotation(furniture.rotation);
-      setNewFurnitureColor(furniture.color);
-    }
-  };
-  
-  const handleUpdateFurniture = () => {
-    if (selectedFurnitureIndex === null) return;
+  // Function to add furniture from template
+  const addFurnitureFromTemplate = (type: string, color: string, dimensions: { width: number, height: number, depth: number }) => {
+    const furniture = {
+      type,
+      position: {
+        x: 0,
+        y: dimensions.height / 2, // Place on floor
+        z: 0
+      },
+      rotation: 0,
+      color,
+      scale: 1,
+      isFixed: false
+    };
     
-    updateFurniturePosition(selectedFurnitureIndex, newFurniturePosition);
-    updateFurnitureRotation(selectedFurnitureIndex, newFurnitureRotation);
-    updateFurnitureColor(selectedFurnitureIndex, newFurnitureColor);
+    addFurniture(furniture);
+  };
+  
+  // Function to add custom furniture
+  const addCustomFurniture = () => {
+    if (!customType.trim()) return;
+    
+    const furniture = {
+      type: customType,
+      position: {
+        x: 0,
+        y: 0.5, // Default height
+        z: 0
+      },
+      rotation: 0,
+      color: customColor,
+      scale: 1,
+      isFixed: false
+    };
+    
+    addFurniture(furniture);
+    setCustomType("");
   };
   
   return (
-    <div className="space-y-4">
-      {/* List of current furniture */}
-      <div className="space-y-2">
-        <Label>Placed Furniture</Label>
-        <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
-          {roomData.furniture.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No furniture placed yet.</p>
-          ) : (
-            roomData.furniture.map((furniture, index) => (
+    <Tabs defaultValue="templates">
+      <TabsList className="grid grid-cols-3 mb-4">
+        <TabsTrigger value="templates">Templates</TabsTrigger>
+        <TabsTrigger value="custom">Add Custom</TabsTrigger>
+        <TabsTrigger value="modify">Modify</TabsTrigger>
+      </TabsList>
+      
+      {/* Templates Tab */}
+      <TabsContent value="templates" className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          {FURNITURE_TEMPLATES.map((item, index) => (
+            <Button
+              key={`template-${index}`}
+              variant="outline"
+              className="h-auto py-3 flex flex-col items-center justify-center hover:bg-accent/10"
+              onClick={() => addFurnitureFromTemplate(item.type, item.color, item.dimensions)}
+            >
               <div 
-                key={index} 
-                className={`flex items-center justify-between p-2 rounded-md ${
-                  selectedFurnitureIndex === index ? 'bg-primary/20' : 'bg-muted'
-                }`}
-              >
-                <div className="flex items-center space-x-2">
-                  <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: furniture.color }} 
-                  />
-                  <span className="text-sm">{furniture.type}</span>
-                </div>
-                <div className="flex space-x-1">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-6 text-xs"
-                    onClick={() => handleSelectFurniture(index)}
-                  >
-                    {selectedFurnitureIndex === index ? 'Deselect' : 'Edit'}
-                  </Button>
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
-                    className="h-6 text-xs"
-                    onClick={() => removeFurniture(index)}
-                  >
-                    Remove
-                  </Button>
-                </div>
+                className="w-12 h-12 mb-1 rounded" 
+                style={{ backgroundColor: item.color }}
+              />
+              <div className="text-sm font-medium">{item.type}</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {item.dimensions.width}m × {item.dimensions.height}m × {item.dimensions.depth}m
               </div>
-            ))
-          )}
+            </Button>
+          ))}
         </div>
-      </div>
+        
+        <div className="text-center text-xs text-muted-foreground mt-4">
+          <p>Click on any template to add it to your room</p>
+        </div>
+      </TabsContent>
       
-      {/* Furniture editing controls */}
-      {selectedFurnitureIndex !== null && (
-        <div className="space-y-3 p-2 border border-primary/30 rounded-md">
-          <h4 className="font-medium text-sm">Edit Furniture</h4>
-          
-          <div className="grid grid-cols-3 gap-2">
-            <div>
-              <Label className="text-xs">X Position</Label>
-              <Input
-                type="number"
-                step={0.1}
-                value={newFurniturePosition.x}
-                onChange={(e) => setNewFurniturePosition({...newFurniturePosition, x: parseFloat(e.target.value)})}
-                className="h-8"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Y Position</Label>
-              <Input
-                type="number"
-                step={0.1}
-                value={newFurniturePosition.y}
-                onChange={(e) => setNewFurniturePosition({...newFurniturePosition, y: parseFloat(e.target.value)})}
-                className="h-8"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Z Position</Label>
-              <Input
-                type="number"
-                step={0.1}
-                value={newFurniturePosition.z}
-                onChange={(e) => setNewFurniturePosition({...newFurniturePosition, z: parseFloat(e.target.value)})}
-                className="h-8"
-              />
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <Label className="text-xs">Rotation (Y-axis)</Label>
-              <span className="text-xs text-muted-foreground">{newFurnitureRotation}°</span>
-            </div>
-            <Slider
-              min={0}
-              max={360}
-              step={5}
-              value={[newFurnitureRotation]}
-              onValueChange={(value) => setNewFurnitureRotation(value[0])}
-            />
-          </div>
-          
-          <div>
-            <Label className="text-xs">Color</Label>
-            <div className="flex gap-2">
-              <Input
-                type="color"
-                value={newFurnitureColor}
-                onChange={(e) => setNewFurnitureColor(e.target.value)}
-                className="w-8 h-8 p-1"
-              />
-              <Input
-                type="text"
-                value={newFurnitureColor}
-                onChange={(e) => setNewFurnitureColor(e.target.value)}
-                className="flex-1 h-8"
-              />
-            </div>
-          </div>
-          
-          <Button
-            size="sm"
-            onClick={handleUpdateFurniture}
-            className="w-full"
-          >
-            Update Furniture
-          </Button>
-        </div>
-      )}
-      
-      {/* Add new furniture form */}
-      <div className="space-y-3 border-t pt-3">
-        <h4 className="font-medium text-sm">Add New Furniture</h4>
-        
-        <div>
-          <Label className="text-xs">Furniture Type</Label>
-          <Select 
-            value={newFurnitureType} 
-            onValueChange={setNewFurnitureType}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select type" />
-            </SelectTrigger>
-            <SelectContent>
-              {furnitureTypes.map(type => (
-                <SelectItem key={type.id} value={type.id}>
-                  {type.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="grid grid-cols-3 gap-2">
-          <div>
-            <Label className="text-xs">X Position</Label>
-            <Input
-              type="number"
-              step={0.1}
-              value={newFurniturePosition.x}
-              onChange={(e) => setNewFurniturePosition({...newFurniturePosition, x: parseFloat(e.target.value)})}
-              className="h-8"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">Y Position</Label>
-            <Input
-              type="number"
-              step={0.1}
-              value={newFurniturePosition.y}
-              onChange={(e) => setNewFurniturePosition({...newFurniturePosition, y: parseFloat(e.target.value)})}
-              className="h-8"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">Z Position</Label>
-            <Input
-              type="number"
-              step={0.1}
-              value={newFurniturePosition.z}
-              onChange={(e) => setNewFurniturePosition({...newFurniturePosition, z: parseFloat(e.target.value)})}
-              className="h-8"
-            />
-          </div>
-        </div>
-        
+      {/* Custom Furniture Tab */}
+      <TabsContent value="custom" className="space-y-4">
         <div className="space-y-2">
-          <div className="flex justify-between">
-            <Label className="text-xs">Rotation</Label>
-            <span className="text-xs text-muted-foreground">{newFurnitureRotation}°</span>
-          </div>
-          <Slider
-            min={0}
-            max={360}
-            step={5}
-            value={[newFurnitureRotation]}
-            onValueChange={(value) => setNewFurnitureRotation(value[0])}
+          <Label htmlFor="custom-type">Furniture Type</Label>
+          <Input
+            id="custom-type"
+            placeholder="E.g., Coffee Table, Plant, etc."
+            value={customType}
+            onChange={(e) => setCustomType(e.target.value)}
           />
         </div>
         
-        <div>
-          <Label className="text-xs">Color</Label>
+        <div className="space-y-2">
+          <Label htmlFor="custom-color">Color</Label>
           <div className="flex gap-2">
             <Input
+              id="custom-color"
               type="color"
-              value={newFurnitureColor}
-              onChange={(e) => setNewFurnitureColor(e.target.value)}
-              className="w-8 h-8 p-1"
+              value={customColor}
+              onChange={(e) => setCustomColor(e.target.value)}
+              className="w-12 h-10 p-1"
             />
             <Input
               type="text"
-              value={newFurnitureColor}
-              onChange={(e) => setNewFurnitureColor(e.target.value)}
-              className="flex-1 h-8"
+              value={customColor}
+              onChange={(e) => setCustomColor(e.target.value)}
+              className="flex-1"
             />
           </div>
         </div>
         
-        <Button
-          size="sm"
-          onClick={handleAddFurniture}
-          className="w-full"
+        <Button 
+          className="w-full mt-4" 
+          onClick={addCustomFurniture}
+          disabled={!customType.trim()}
         >
-          Add Furniture
+          Add Custom Furniture
         </Button>
-      </div>
-    </div>
+      </TabsContent>
+      
+      {/* Modify Tab */}
+      <TabsContent value="modify" className="space-y-4">
+        <FurnitureControls />
+      </TabsContent>
+    </Tabs>
   );
 };
 

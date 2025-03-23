@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { useTexture } from "@react-three/drei";
 import { useDesign } from "../lib/stores/useDesign";
 import FurnitureModels from "./FurnitureModels";
+import RoomFurniture from "../components/RoomFurniture";
 
 // Helper function to create material based on texture settings
 const createMaterial = (
@@ -187,8 +188,11 @@ const RoomModel = () => {
         </mesh>
       ))}
       
-      {/* Furniture */}
+      {/* Legacy Furniture Models */}
       <FurnitureModels />
+      
+      {/* New draggable furniture */}
+      <RoomFurniture />
     </group>
   );
 };
