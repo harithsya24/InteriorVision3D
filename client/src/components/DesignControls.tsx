@@ -6,6 +6,7 @@ import LightingControls from "./LightingControls";
 import FurniturePanel from "./FurniturePanel";
 import IkeaCatalogPanel from "./IkeaCatalogPanel";
 import FixedElementsPanel from "./FixedElementsPanel";
+import RecentlyUsedPanel from "./RecentlyUsedPanel";
 import { Button } from "./ui/button";
 import {
   Tabs,
