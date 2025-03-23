@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useDesign, Furniture } from "../lib/stores/useDesign";
 import { Button } from "./ui/button";
-import { Card } from "./ui/card";
+import { Label } from "./ui/label";
 import { ScrollArea } from "./ui/scroll-area";
 
 const MAX_RECENT_ITEMS = 8;
@@ -9,16 +9,20 @@ const MAX_RECENT_ITEMS = 8;
 const RecentlyUsedPanel: React.FC = () => {
   const { roomData, addFurniture } = useDesign();
   const [recentItems, setRecentItems] = useState<Furniture[]>([]);
-
-  // Initialize and update recent items when furniture changes
+  
+  // Update recently used items when furniture is added
   useEffect(() => {
-    const items = [...roomData.furniture].reverse().slice(0, MAX_RECENT_ITEMS);
+    // Only track non-fixed furniture
+    const nonFixedFurniture = roomData.furniture.filter(item => !item.isFixed);
     
-    // Remove duplicate furniture items based on type
+    // Get the most recently added items
+    const newRecentItems = [...nonFixedFurniture].reverse().slice(0, MAX_RECENT_ITEMS);
+    
+    // Remove duplicates based on furniture type
     const uniqueItems: Furniture[] = [];
     const types = new Set<string>();
     
-    items.forEach(item => {
+    newRecentItems.forEach(item => {
       if (!types.has(item.type)) {
         types.add(item.type);
         uniqueItems.push(item);
@@ -27,68 +31,68 @@ const RecentlyUsedPanel: React.FC = () => {
     
     setRecentItems(uniqueItems);
   }, [roomData.furniture]);
-
-  // Add a copy of the selected item
+  
+  // Add a copy of the furniture with a slight offset
   const addCopy = (item: Furniture) => {
-    // Create a new position slightly offset from the original
-    const offset = 0.3;
-    const position = {
-      x: item.position.x + offset,
-      y: item.position.y,
-      z: item.position.z + offset
-    };
-    
-    // Create a copy of the furniture item with the new position
+    // Create a copy with a slightly different position
     const copy: Furniture = {
       ...item,
-      position,
-      isFixed: false // Make sure copy is movable
+      position: {
+        x: item.position.x + 0.5,
+        y: item.position.y,
+        z: item.position.z + 0.5
+      },
+      isFixed: false // Ensure the copy is not fixed
     };
     
     addFurniture(copy);
   };
-
-  // Render a preview of a furniture item
+  
+  // Render a preview of the furniture item
   const renderItemPreview = (item: Furniture) => {
+    const itemTypeFormatted = item.type.charAt(0).toUpperCase() + item.type.slice(1);
+    
     return (
-      <Card key={`recent-${item.type}-${item.position.x}-${item.position.y}`} className="p-3 mb-2 bg-card hover:bg-accent/10 transition-colors">
-        <div className="text-xs font-medium mb-1">{item.type}</div>
-        <div className="flex justify-between items-center">
-          <div className="w-6 h-6 rounded-full" style={{ backgroundColor: item.color }} />
-          <div className="text-xs text-muted-foreground">
-            {item.ikeaProductId ? 'IKEA' : item.isFixed ? 'Fixed' : 'Custom'}
-          </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="text-xs h-7 px-2"
-            onClick={() => addCopy(item)}
-          >
-            Add Copy
-          </Button>
-        </div>
-      </Card>
+      <div className="flex flex-col items-center">
+        <div
+          className="w-10 h-10 rounded border"
+          style={{ backgroundColor: item.color }}
+        />
+        <div className="text-xs mt-1 text-center">{itemTypeFormatted}</div>
+      </div>
     );
   };
-
+  
+  if (recentItems.length === 0) {
+    return (
+      <div className="p-4 text-center text-muted-foreground">
+        <p>No recently used furniture items</p>
+      </div>
+    );
+  }
+  
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Recently Used Items</h3>
-      </div>
+      <Label>Recently Used Items</Label>
       
-      <ScrollArea className="h-[300px] rounded-md border p-4">
-        {recentItems.length > 0 ? (
-          recentItems.map(renderItemPreview)
-        ) : (
-          <div className="text-center text-muted-foreground py-8">
-            No recently used items yet.
-            <p className="text-xs mt-2">
-              Add furniture items to see them here.
-            </p>
-          </div>
-        )}
+      <ScrollArea className="h-40">
+        <div className="grid grid-cols-4 gap-2">
+          {recentItems.map((item, index) => (
+            <Button
+              key={`recent-${index}`}
+              variant="outline"
+              className="h-auto p-2 flex flex-col items-center"
+              onClick={() => addCopy(item)}
+            >
+              {renderItemPreview(item)}
+            </Button>
+          ))}
+        </div>
       </ScrollArea>
+      
+      <div className="text-xs text-muted-foreground text-center">
+        <p>Click an item to add a copy to your room</p>
+      </div>
     </div>
   );
 };

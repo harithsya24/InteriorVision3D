@@ -14,8 +14,8 @@ const RoomFurniture: React.FC = () => {
       .filter(item => item.modelPath)
       .map(item => item.modelPath as string);
     
-    // Create a Set to remove duplicates
-    const uniqueModelPaths = [...new Set(modelPaths)];
+    // Create an array of unique model paths
+    const uniqueModelPaths = Array.from(new Set(modelPaths));
     
     // Preload each model
     uniqueModelPaths.forEach(modelPath => {
