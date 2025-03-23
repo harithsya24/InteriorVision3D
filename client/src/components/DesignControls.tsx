@@ -38,12 +38,13 @@ const DesignControls = () => {
           <h2 className="text-xl font-bold mb-4 border-b pb-2">Interior Design Controls</h2>
 
           <Tabs defaultValue="materials">
-            <TabsList className="grid grid-cols-5 mb-4">
+            <TabsList className="grid grid-cols-6 mb-4">
               <TabsTrigger value="materials">Materials</TabsTrigger>
               <TabsTrigger value="lighting">Lighting</TabsTrigger>
               <TabsTrigger value="furniture">Furniture</TabsTrigger>
               <TabsTrigger value="fixed">Fixed</TabsTrigger>
               <TabsTrigger value="ikea">IKEA</TabsTrigger>
+              <TabsTrigger value="recent">Recent</TabsTrigger>
             </TabsList>
 
             <TabsContent value="materials" className="space-y-4">
@@ -64,6 +65,10 @@ const DesignControls = () => {
             
             <TabsContent value="ikea" className="space-y-4">
               <IkeaCatalogPanel />
+            </TabsContent>
+            
+            <TabsContent value="recent" className="space-y-4">
+              <RecentlyUsedPanel />
             </TabsContent>
           </Tabs>
 

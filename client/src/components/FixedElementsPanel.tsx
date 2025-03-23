@@ -1,65 +1,108 @@
-import React, { useState } from 'react';
-import { FixedElementsService, FixedElementType } from '../lib/services/fixedElementsService';
-import { useDesign } from '../lib/stores/useDesign';
-import { Button } from './ui/button';
-import { Separator } from './ui/separator';
-import { Card } from './ui/card';
+import { useState } from "react";
+import { useDesign } from "../lib/stores/useDesign";
+import { FixedElementsService, FixedElementType } from "../lib/services/fixedElementsService";
+import { Button } from "./ui/button";
+import { Card } from "./ui/card";
+import { Separator } from "./ui/separator";
+import { ScrollArea } from "./ui/scroll-area";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 
 const FixedElementsPanel: React.FC = () => {
-  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
-  const fixedElements = FixedElementsService.getAvailableFixedElements();
-  const addFurniture = useDesign(state => state.addFurniture);
-
-  // Handle selecting a fixed element
+  const { addFurniture } = useDesign();
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  
+  // Get all available fixed elements
+  const allElements = FixedElementsService.getAvailableFixedElements();
+  
+  // Get unique categories for filtering
+  const categories = ["all", ...new Set(allElements.map(item => item.category))];
+  
+  // Filter elements by selected category
+  const filteredElements = selectedCategory === "all" 
+    ? allElements 
+    : allElements.filter(item => item.category === selectedCategory);
+  
+  // Handle element selection
   const handleSelectElement = (element: FixedElementType) => {
-    setSelectedElementId(element.id);
-    
-    // Create a furniture item from the fixed element and add it to the room
-    // Position at the center of the room for now
+    // Create a furniture item from the fixed element
+    // Place at default position - users can move it later
     const furniture = FixedElementsService.createFixedFurniture(
       element,
-      { x: 0, y: 0, z: 0 },
-      0
+      { x: 0, y: element.defaultDimensions.height / 2, z: 0 },
+      0, // Default rotation
+      "#FFFFFF" // Default color
     );
     
-    // Add the furniture to the room
+    // Add to the room
     addFurniture(furniture);
   };
-
+  
   return (
-    <div className="p-4 bg-background rounded-lg shadow-sm">
-      <h3 className="text-lg font-semibold mb-4">Fixed Architectural Elements</h3>
-      
-      <div className="mb-4">
-        <p className="text-sm text-muted-foreground">
-          These are built-in elements that attach to walls or floors.
-        </p>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">Fixed Architectural Elements</h3>
       </div>
       
-      <Separator className="my-4" />
+      {/* Category filter */}
+      <div className="mb-4">
+        <label className="text-sm text-muted-foreground mb-2 block">
+          Filter by Category
+        </label>
+        <Select 
+          value={selectedCategory} 
+          onValueChange={setSelectedCategory}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select category" />
+          </SelectTrigger>
+          <SelectContent>
+            {categories.map(category => (
+              <SelectItem key={category} value={category}>
+                {category.charAt(0).toUpperCase() + category.slice(1)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       
-      <div className="flex flex-col space-y-4 max-h-96 overflow-y-auto">
-        {fixedElements.map(element => (
-          <Card
-            key={element.id}
-            className={`p-4 cursor-pointer transition-colors hover:bg-muted ${
-              selectedElementId === element.id ? 'border-primary' : ''
-            }`}
-            onClick={() => handleSelectElement(element)}
-          >
-            <div className="flex justify-between">
-              <div>
-                <h4 className="font-medium">{element.name}</h4>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {element.description}
-                </p>
-                <p className="text-xs mt-2">
-                  {element.defaultDimensions.width} × {element.defaultDimensions.depth} × {element.defaultDimensions.height} m
-                </p>
-              </div>
+      <Separator />
+      
+      {/* Elements list */}
+      <ScrollArea className="h-[350px] rounded-md border p-4">
+        {filteredElements.map(element => (
+          <Card key={element.id} className="p-3 mb-3 hover:bg-accent/10 transition-colors">
+            <div className="text-sm font-medium mb-1">{element.name}</div>
+            <div className="text-xs text-muted-foreground mb-2">{element.description}</div>
+            <div className="text-xs mb-2">
+              <span className="font-medium">Dimensions: </span>
+              {element.defaultDimensions.width}m × {element.defaultDimensions.height}m × {element.defaultDimensions.depth}m
             </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full text-xs"
+              onClick={() => handleSelectElement(element)}
+            >
+              Add to Room
+            </Button>
           </Card>
         ))}
+        
+        {filteredElements.length === 0 && (
+          <div className="text-center text-muted-foreground py-8">
+            No elements found for this category.
+          </div>
+        )}
+      </ScrollArea>
+      
+      <div className="text-xs text-muted-foreground mt-4">
+        <p>Fixed elements are architectural features that are permanently attached to walls or floors.</p>
       </div>
     </div>
   );
