@@ -1,8 +1,10 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, Suspense } from "react";
 import * as THREE from "three";
 import { useThree, useFrame } from "@react-three/fiber";
-import { Html } from "@react-three/drei";
+import { useDrag } from "@use-gesture/react";
+import { useGLTF } from "@react-three/drei";
 import { useDesign, Furniture } from "../lib/stores/useDesign";
+import { GLTF } from "three-stdlib";
 
 interface DraggableFurnitureProps {
   furniture: Furniture;
@@ -10,139 +12,132 @@ interface DraggableFurnitureProps {
 }
 
 const DraggableFurniture: React.FC<DraggableFurnitureProps> = ({ furniture, index }) => {
-  const { camera, scene, raycaster, gl, pointer } = useThree();
-  const meshRef = useRef<THREE.Mesh>(null);
   const { updateFurniturePosition } = useDesign();
-  
+  const groupRef = useRef<THREE.Group>(null);
+  const meshRef = useRef<THREE.Mesh>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-  const [showControls, setShowControls] = useState(false);
+  const [modelLoaded, setModelLoaded] = useState(false);
+  const { camera, raycaster, gl, scene } = useThree();
   
-  // Floor plane for raycasting during dragging
+  // Track floor position for dragging
   const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-  const intersectionPoint = new THREE.Vector3();
+  const planeIntersectPoint = new THREE.Vector3();
   
-  // Handle hover states
-  const handlePointerOver = () => {
-    setIsHovered(true);
-    document.body.style.cursor = furniture.isFixed ? "not-allowed" : "grab";
-  };
+  // Load 3D model if available
+  const modelRef = useRef<THREE.Group | null>(null);
+  const customModel = furniture.modelPath ? 
+    useGLTF(furniture.modelPath) as GLTF & { scene: THREE.Group } : 
+    null;
   
-  const handlePointerOut = () => {
-    setIsHovered(false);
-    if (!isDragging) {
-      document.body.style.cursor = "auto";
+  // Update model loaded state
+  useEffect(() => {
+    if (customModel) {
+      setModelLoaded(true);
+      if (furniture.modelPath) {
+        console.log(`Model loaded: ${furniture.modelPath}`);
+      }
     }
-  };
+  }, [customModel, furniture.modelPath]);
   
-  // Handle drag start
-  const handlePointerDown = (e: any) => {
-    // Prevent dragging fixed elements
-    if (furniture.isFixed) return;
+  // Handle dragging logic
+  const bind = useDrag(({ active, movement: [x, z], first, last }) => {
+    if (furniture.isFixed) return; // Don't allow dragging fixed elements
     
-    e.stopPropagation();
-    setIsDragging(true);
-    document.body.style.cursor = "grabbing";
-  };
-  
-  // Frame-by-frame movement updates
-  useFrame(() => {
-    if (isDragging && meshRef.current) {
-      // Cast a ray from the camera through the mouse pointer
-      raycaster.setFromCamera(pointer, camera);
+    if (first) {
+      setIsDragging(true);
+    }
+    
+    // Update position on drag
+    if (active) {
+      // Cast ray to get floor intersection
+      raycaster.setFromCamera(new THREE.Vector2(), camera);
+      raycaster.ray.intersectPlane(floorPlane, planeIntersectPoint);
       
-      // Get the point where the ray intersects the floor plane
-      raycaster.ray.intersectPlane(floorPlane, intersectionPoint);
-      
-      // Update the furniture position
-      updateFurniturePosition(index, {
-        x: intersectionPoint.x,
-        y: furniture.position.y, // Keep the same height
-        z: intersectionPoint.z
-      });
+      if (groupRef.current) {
+        const newPosition = {
+          x: planeIntersectPoint.x,
+          y: furniture.position.y,
+          z: planeIntersectPoint.z
+        };
+        
+        // Update local position
+        groupRef.current.position.x = newPosition.x;
+        groupRef.current.position.z = newPosition.z;
+        
+        // Update global state if this is the last event
+        if (last) {
+          updateFurniturePosition(index, newPosition);
+          setIsDragging(false);
+        }
+      }
     }
   });
   
-  // Handle drag end
+  // Set initial position and rotation
   useEffect(() => {
-    const handlePointerUp = () => {
-      if (isDragging) {
-        setIsDragging(false);
-        document.body.style.cursor = isHovered ? "grab" : "auto";
-      }
-    };
-    
-    window.addEventListener("pointerup", handlePointerUp);
-    return () => window.removeEventListener("pointerup", handlePointerUp);
-  }, [isDragging, isHovered]);
-  
-  // Simple furniture visualization
-  // In a real implementation this would be a more complex 3D model
-  const getFurnitureGeometry = () => {
-    switch (furniture.type.toLowerCase()) {
-      case "sofa":
-        return <boxGeometry args={[2, 0.8, 0.9]} />;
-      case "chair":
-        return <boxGeometry args={[0.8, 1, 0.8]} />;
-      case "table":
-        return <boxGeometry args={[1.2, 0.75, 0.8]} />;
-      case "bed":
-        return <boxGeometry args={[1.8, 0.5, 2.1]} />;
-      case "bookshelf":
-        return <boxGeometry args={[1.2, 2, 0.4]} />;
-      case "cabinet":
-        return <boxGeometry args={[1, 1.8, 0.5]} />;
-      case "desk":
-        return <boxGeometry args={[1.4, 0.75, 0.7]} />;
-      case "lamp":
-        return <cylinderGeometry args={[0.2, 0.3, 1.5, 16]} />;
-      default:
-        // Default box if no specific geometry
-        return <boxGeometry args={[1, 1, 1]} />;
+    if (groupRef.current) {
+      groupRef.current.position.set(
+        furniture.position.x,
+        furniture.position.y,
+        furniture.position.z
+      );
+      
+      groupRef.current.rotation.y = furniture.rotation * (Math.PI / 180);
     }
-  };
+  }, [furniture]);
   
   return (
     <group 
+      ref={groupRef}
+      {...(bind() as any)}
       position={[furniture.position.x, furniture.position.y, furniture.position.z]}
-      rotation={[0, furniture.rotation * Math.PI / 180, 0]}
+      rotation={[0, furniture.rotation * (Math.PI / 180), 0]}
     >
-      <mesh
-        ref={meshRef}
-        onPointerOver={handlePointerOver}
-        onPointerOut={handlePointerOut}
-        onPointerDown={handlePointerDown}
-        castShadow
-        receiveShadow
-      >
-        {getFurnitureGeometry()}
-        <meshStandardMaterial 
-          color={furniture.color} 
-          roughness={0.7}
-          metalness={0.1}
-          transparent
-          opacity={isDragging ? 0.7 : 1}
-          emissive={isHovered ? "#555555" : "#000000"}
-        />
-      </mesh>
-      
-      {/* Handle hover information */}
-      {isHovered && (
-        <Html position={[0, furniture.type.toLowerCase() === "lamp" ? 1 : 0.8, 0]} center>
-          <div className="bg-black/70 text-white px-2 py-1 rounded text-xs whitespace-nowrap">
-            {furniture.type}
-            {furniture.isFixed && <span className="ml-1">(Fixed)</span>}
-          </div>
-        </Html>
+      {modelLoaded && customModel ? (
+        // Render the 3D model if available
+        <Suspense fallback={
+          <mesh castShadow>
+            <boxGeometry args={[1, 1, 1]} />
+            <meshStandardMaterial color="#FFFFFF" />
+          </mesh>
+        }>
+          <primitive 
+            object={customModel.scene.clone()} 
+            scale={[furniture.scale, furniture.scale, furniture.scale]}
+            castShadow 
+            receiveShadow 
+          />
+        </Suspense>
+      ) : (
+        // Render a colored box as fallback
+        <mesh 
+          ref={meshRef} 
+          castShadow 
+          receiveShadow
+        >
+          <boxGeometry args={[
+            furniture.productInfo?.dimensions?.width || 1, 
+            furniture.productInfo?.dimensions?.height || 1, 
+            furniture.productInfo?.dimensions?.depth || 1
+          ]} />
+          <meshStandardMaterial 
+            color={furniture.color} 
+            roughness={0.7}
+            metalness={0.1}
+          />
+        </mesh>
       )}
       
-      {/* Show move/rotate indicators */}
-      {(isHovered || isDragging) && !furniture.isFixed && (
-        <Html position={[0, -0.5, 0]} center>
-          <div className="bg-black/70 text-white px-2 py-1 rounded text-xs">
-            {isDragging ? "Release to place" : "Click and drag to move"}
-          </div>
-        </Html>
+      {/* Visual indicator when dragging */}
+      {isDragging && (
+        <mesh position={[0, -furniture.position.y + 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[1.5, 1.5]} />
+          <meshBasicMaterial 
+            color="#4f46e5" 
+            transparent={true} 
+            opacity={0.3} 
+          />
+        </mesh>
       )}
     </group>
   );

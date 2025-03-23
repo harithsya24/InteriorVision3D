@@ -1,20 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useDesign } from "../lib/stores/useDesign";
-import { IkeaApiService } from "../lib/services/ikeaApiService";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Card } from "./ui/card";
+import { Label } from "./ui/label";
 import { ScrollArea } from "./ui/scroll-area";
-import { Separator } from "./ui/separator";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
+import { Search } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
-// Mock IKEA product data interface
+// Mock IKEA products (in a real implementation, this would come from an API)
 export interface IkeaProduct {
   id: string;
   name: string;
@@ -32,105 +25,128 @@ export interface IkeaProduct {
   category: string;
   description: string;
   brand: string;
+  color: string;
 }
 
-// Sample IKEA products (for demonstration) - these would be fetched from the API
-const SAMPLE_PRODUCTS: IkeaProduct[] = [
+const MOCK_IKEA_PRODUCTS: IkeaProduct[] = [
   {
-    id: "ikea-001",
-    name: "BILLY Bookcase",
-    price: {
-      amount: 129.99,
-      currency: "USD"
-    },
-    dimensions: {
-      width: 0.8,
-      height: 2.02,
-      depth: 0.28
-    },
-    imageUrl: "https://www.ikea.com/us/en/images/products/billy-bookcase-white__0625599_pe692385_s5.jpg",
-    productUrl: "https://www.ikea.com/us/en/p/billy-bookcase-white-00263850/",
-    category: "bookcase",
-    description: "Bookcase, white, 31 1/2x11x79 1/2\"",
-    brand: "IKEA"
-  },
-  {
-    id: "ikea-002",
-    name: "MALM Bed frame",
-    price: {
-      amount: 249.99,
-      currency: "USD"
-    },
-    dimensions: {
-      width: 1.6,
-      height: 0.38,
-      depth: 2.0
-    },
-    imageUrl: "https://www.ikea.com/us/en/images/products/malm-bed-frame-high-white-luroey__0749130_pe745499_s5.jpg",
-    productUrl: "https://www.ikea.com/us/en/p/malm-bed-frame-high-white-luroey-s09009475/",
-    category: "bed",
+    id: "prod001",
+    name: "MALM",
+    price: { amount: 179, currency: "USD" },
+    dimensions: { width: 2.0, height: 0.5, depth: 1.6 },
+    imageUrl: "https://www.ikea.com/placeholder-image.jpg",
+    productUrl: "https://www.ikea.com/product/malm",
+    category: "beds",
     description: "Bed frame, high, white, Queen",
-    brand: "IKEA"
+    brand: "IKEA",
+    color: "#FFFFFF"
   },
   {
-    id: "ikea-003",
-    name: "POÄNG Armchair",
-    price: {
-      amount: 119.99,
-      currency: "USD"
-    },
-    dimensions: {
-      width: 0.68,
-      height: 1.0,
-      depth: 0.82
-    },
-    imageUrl: "https://www.ikea.com/us/en/images/products/poaeng-armchair-birch-veneer-knisa-light-beige__0571501_pe566690_s5.jpg",
-    productUrl: "https://www.ikea.com/us/en/p/poaeng-armchair-birch-veneer-knisa-light-beige-s99305926/",
-    category: "chair",
-    description: "Armchair, birch veneer/Knisa light beige",
-    brand: "IKEA"
+    id: "prod002",
+    name: "BILLY",
+    price: { amount: 59, currency: "USD" },
+    dimensions: { width: 0.8, height: 2.0, depth: 0.28 },
+    imageUrl: "https://www.ikea.com/placeholder-image.jpg",
+    productUrl: "https://www.ikea.com/product/billy",
+    category: "bookcases",
+    description: "Bookcase, white, 31 1/2x11x79 1/2",
+    brand: "IKEA",
+    color: "#FFFFFF"
+  },
+  {
+    id: "prod003",
+    name: "POÄNG",
+    price: { amount: 99, currency: "USD" },
+    dimensions: { width: 0.68, height: 1.0, depth: 0.82 },
+    imageUrl: "https://www.ikea.com/placeholder-image.jpg",
+    productUrl: "https://www.ikea.com/product/poang",
+    category: "chairs",
+    description: "Armchair, birch veneer, Knisa light beige",
+    brand: "IKEA",
+    color: "#F5DEB3"
+  },
+  {
+    id: "prod004",
+    name: "KALLAX",
+    price: { amount: 129, currency: "USD" },
+    dimensions: { width: 1.47, height: 1.47, depth: 0.39 },
+    imageUrl: "https://www.ikea.com/placeholder-image.jpg",
+    productUrl: "https://www.ikea.com/product/kallax",
+    category: "shelving_units",
+    description: "Shelving unit, white, 57 7/8x57 7/8",
+    brand: "IKEA",
+    color: "#FFFFFF"
+  },
+  {
+    id: "prod005",
+    name: "STOCKHOLM",
+    price: { amount: 399, currency: "USD" },
+    dimensions: { width: 2.1, height: 0.9, depth: 0.8 },
+    imageUrl: "https://www.ikea.com/placeholder-image.jpg",
+    productUrl: "https://www.ikea.com/product/stockholm",
+    category: "sofas",
+    description: "Sofa, Seglora natural, 83 1/8\"",
+    brand: "IKEA",
+    color: "#8B4513"
   }
 ];
 
-// Categories for filtering
-const PRODUCT_CATEGORIES = [
-  "all",
-  "bookcase",
-  "bed",
-  "chair",
-  "table",
-  "sofa",
-  "storage",
-  "lighting"
+const CATEGORIES = [
+  { id: "all", name: "All Items" },
+  { id: "sofas", name: "Sofas & Armchairs" },
+  { id: "tables", name: "Tables & Desks" },
+  { id: "chairs", name: "Chairs" },
+  { id: "beds", name: "Beds" },
+  { id: "storage", name: "Storage & Organization" }
 ];
 
 const IkeaCatalogPanel: React.FC = () => {
   const { addFurniture } = useDesign();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [products, setProducts] = useState<IkeaProduct[]>(MOCK_IKEA_PRODUCTS);
   
-  // Mock API search - this would be replaced with actual API calls
-  const searchResults = SAMPLE_PRODUCTS.filter(product => {
-    // Filter by category
-    const categoryMatch = selectedCategory === "all" || product.category === selectedCategory;
+  // Handle product search
+  const handleSearch = () => {
+    const filteredProducts = MOCK_IKEA_PRODUCTS.filter(product => {
+      const matchesQuery = product.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          product.description.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
+      
+      return matchesQuery && matchesCategory;
+    });
     
-    // Filter by search query
-    const queryMatch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                     product.description.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    return categoryMatch && queryMatch;
-  });
+    setProducts(filteredProducts);
+  };
   
-  // Handle selecting a product
+  // Handle category selection
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    
+    if (category === "all") {
+      setProducts(MOCK_IKEA_PRODUCTS);
+    } else {
+      const filteredProducts = MOCK_IKEA_PRODUCTS.filter(product => 
+        product.category === category
+      );
+      setProducts(filteredProducts);
+    }
+  };
+  
+  // Handle selecting an IKEA product
   const handleSelectProduct = (product: IkeaProduct) => {
-    // Convert IKEA product to furniture
     const furniture = {
       type: product.name,
-      position: { x: 0, y: product.dimensions.height / 2, z: 0 },
+      position: {
+        x: 0,
+        y: product.dimensions.height / 2, // Position at floor level
+        z: 0
+      },
       rotation: 0,
-      color: "#FFFFFF", // Default color
+      color: product.color,
       scale: 1,
-      isFixed: false, // IKEA furniture is not fixed to walls/floors
+      isFixed: false,
       ikeaProductId: product.id,
       productInfo: {
         name: product.name,
@@ -138,113 +154,90 @@ const IkeaCatalogPanel: React.FC = () => {
         price: product.price.amount,
         currency: product.price.currency,
         url: product.productUrl,
-        dimensions: {
-          width: product.dimensions.width,
-          height: product.dimensions.height,
-          depth: product.dimensions.depth
-        }
+        dimensions: product.dimensions
       }
     };
     
-    // Add to the room
     addFurniture(furniture);
   };
   
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">IKEA Catalog</h3>
-      </div>
-      
-      {/* Search bar */}
-      <div className="flex gap-2">
-        <Input
-          placeholder="Search for furniture..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full"
-        />
-      </div>
-      
-      {/* Category filter */}
       <div>
-        <label className="text-sm text-muted-foreground mb-2 block">
-          Filter by Category
-        </label>
-        <Select 
-          value={selectedCategory} 
-          onValueChange={setSelectedCategory}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select category" />
-          </SelectTrigger>
-          <SelectContent>
-            {PRODUCT_CATEGORIES.map(category => (
-              <SelectItem key={category} value={category}>
-                {category.charAt(0).toUpperCase() + category.slice(1)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Label htmlFor="search-query">Search IKEA Catalog</Label>
+        <div className="flex gap-2 mt-1">
+          <Input
+            id="search-query"
+            placeholder="Search by name or description..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-1"
+          />
+          <Button onClick={handleSearch}>
+            <Search className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
       
-      <Separator />
-      
-      {/* Product list */}
-      <ScrollArea className="h-[350px] rounded-md border p-4">
-        {searchResults.length > 0 ? (
-          searchResults.map(product => (
-            <Card key={product.id} className="p-3 mb-3 hover:bg-accent/10 transition-colors">
-              <div className="text-sm font-medium mb-1">{product.name}</div>
-              <div className="text-xs text-muted-foreground mb-2">{product.description}</div>
-              <div className="grid grid-cols-2 gap-2 mb-2">
-                <div className="text-xs">
-                  <span className="font-medium">Price: </span>
-                  {product.price.amount} {product.price.currency}
-                </div>
-                <div className="text-xs">
-                  <span className="font-medium">Size: </span>
-                  {product.dimensions.width}×{product.dimensions.height}×{product.dimensions.depth}m
-                </div>
-              </div>
-              <div className="flex justify-between">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="text-xs h-7 px-2 w-[48%]"
-                  onClick={() => window.open(product.productUrl, '_blank')}
-                >
-                  View on IKEA
-                </Button>
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  className="text-xs h-7 px-2 w-[48%]"
-                  onClick={() => handleSelectProduct(product)}
-                >
-                  Add to Room
-                </Button>
-              </div>
-            </Card>
-          ))
-        ) : (
-          <div className="text-center text-muted-foreground py-8">
-            No products found matching your criteria.
-          </div>
-        )}
-        
-        {/* API Connection Notice */}
-        <div className="mt-4 p-3 border border-yellow-200 bg-yellow-50 text-yellow-700 rounded-md text-xs">
-          <p className="font-medium">⚠️ Using demo data</p>
-          <p className="mt-1">
-            This panel is showing sample data. To connect to the real IKEA API, 
-            an API key needs to be provided and configured in the application.
-          </p>
+      <Tabs defaultValue="all" onValueChange={handleCategoryChange}>
+        <div className="overflow-x-auto">
+          <TabsList className="w-max">
+            {CATEGORIES.map(category => (
+              <TabsTrigger 
+                key={category.id} 
+                value={category.id}
+                className="px-4"
+              >
+                {category.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
         </div>
-      </ScrollArea>
+        
+        {CATEGORIES.map(category => (
+          <TabsContent key={`content-${category.id}`} value={category.id}>
+            <ScrollArea className="h-[300px] pr-4">
+              <div className="space-y-3">
+                {products.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    <p>No products found. Try a different search or category.</p>
+                  </div>
+                ) : (
+                  products.map(product => (
+                    <div
+                      key={product.id}
+                      className="border rounded-md p-3 hover:border-primary/50 transition-colors cursor-pointer"
+                      onClick={() => handleSelectProduct(product)}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="w-16 h-16 bg-muted flex items-center justify-center rounded">
+                          <span className="text-2xl">🪑</span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex justify-between">
+                            <h4 className="font-medium">{product.name}</h4>
+                            <span className="font-medium">${product.price.amount}</span>
+                          </div>
+                          <p className="text-muted-foreground text-sm">{product.description}</p>
+                          <div className="flex justify-between items-center mt-1">
+                            <div className="text-xs text-muted-foreground">
+                              {product.dimensions.width}m × {product.dimensions.height}m × {product.dimensions.depth}m
+                            </div>
+                            <Button variant="ghost" size="sm" className="h-7 text-xs">Add to room</Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+        ))}
+      </Tabs>
       
-      <div className="text-xs text-muted-foreground">
-        <p>IKEA furniture is placed in the room as movable objects. You can reposition them after adding.</p>
+      <div className="text-center text-xs text-muted-foreground">
+        <p>Note: This is a demo with sample IKEA products. In a real implementation, this would connect to the IKEA API.</p>
       </div>
     </div>
   );

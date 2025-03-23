@@ -3,6 +3,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { useDesign } from "../lib/stores/useDesign";
 import FurniturePanel from "./FurniturePanel";
 import RecentlyUsedPanel from "./RecentlyUsedPanel";
+import FixedElementsPanel from "./FixedElementsPanel";
+import IkeaCatalogPanel from "./IkeaCatalogPanel";
 import { Button } from "./ui/button";
 import { 
   Square, 
@@ -11,7 +13,7 @@ import {
   History, 
   Home, 
   Sun, 
-  Camera,
+  ShoppingBag,
   Eye,
   EyeOff
 } from "lucide-react";
@@ -49,32 +51,48 @@ const DesignControls: React.FC = () => {
       </div>
       
       <Tabs defaultValue="furniture">
-        <TabsList className="grid grid-cols-5 mb-4">
-          <TabsTrigger value="furniture" className="flex flex-col items-center py-2">
-            <Sofa className="h-4 w-4 mb-1" />
-            <span className="text-xs">Furniture</span>
-          </TabsTrigger>
-          <TabsTrigger value="recent" className="flex flex-col items-center py-2">
-            <History className="h-4 w-4 mb-1" />
-            <span className="text-xs">Recent</span>
-          </TabsTrigger>
-          <TabsTrigger value="room" className="flex flex-col items-center py-2">
-            <Home className="h-4 w-4 mb-1" />
-            <span className="text-xs">Room</span>
-          </TabsTrigger>
-          <TabsTrigger value="materials" className="flex flex-col items-center py-2">
-            <Palette className="h-4 w-4 mb-1" />
-            <span className="text-xs">Materials</span>
-          </TabsTrigger>
-          <TabsTrigger value="lighting" className="flex flex-col items-center py-2">
-            <Sun className="h-4 w-4 mb-1" />
-            <span className="text-xs">Lighting</span>
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="mb-4 w-full flex justify-between min-w-[600px]">
+            <TabsTrigger value="furniture" className="flex items-center gap-2 px-4 py-2 flex-1">
+              <Sofa className="h-4 w-4" />
+              <span>Furniture</span>
+            </TabsTrigger>
+            <TabsTrigger value="fixed" className="flex items-center gap-2 px-4 py-2 flex-1">
+              <Square className="h-4 w-4" />
+              <span>Fixed</span>
+            </TabsTrigger>
+            <TabsTrigger value="ikea" className="flex items-center gap-2 px-4 py-2 flex-1">
+              <ShoppingBag className="h-4 w-4" />
+              <span>IKEA</span>
+            </TabsTrigger>
+            <TabsTrigger value="recent" className="flex items-center gap-2 px-4 py-2 flex-1">
+              <History className="h-4 w-4" />
+              <span>Recent</span>
+            </TabsTrigger>
+            <TabsTrigger value="materials" className="flex items-center gap-2 px-4 py-2 flex-1">
+              <Palette className="h-4 w-4" />
+              <span>Materials</span>
+            </TabsTrigger>
+            <TabsTrigger value="lighting" className="flex items-center gap-2 px-4 py-2 flex-1">
+              <Sun className="h-4 w-4" />
+              <span>Lighting</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
         
         {/* Furniture Panel */}
         <TabsContent value="furniture">
           <FurniturePanel />
+        </TabsContent>
+        
+        {/* Fixed Elements Panel */}
+        <TabsContent value="fixed">
+          <FixedElementsPanel />
+        </TabsContent>
+        
+        {/* IKEA Catalog Panel */}
+        <TabsContent value="ikea">
+          <IkeaCatalogPanel />
         </TabsContent>
         
         {/* Recently Used Panel */}

@@ -1,80 +1,39 @@
-import { useEffect, useMemo } from "react";
-import { useDesign } from "../lib/stores/useDesign";
-import DraggableFurniture from "./DraggableFurniture";
-import { useGLTF } from "@react-three/drei";
+import { useRef, useEffect, useState } from "react";
 import * as THREE from "three";
+import { useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
+import { useDesign, Furniture } from "../lib/stores/useDesign";
+import DraggableFurniture from "./DraggableFurniture";
 
 const RoomFurniture: React.FC = () => {
   const { roomData } = useDesign();
-
-  // Preload all furniture models
+  
+  // Preload all available fixed element models
   useEffect(() => {
-    // Preload fixed element models from our furniture data
-    const modelPaths = roomData.furniture
-      .filter(item => item.modelPath)
-      .map(item => item.modelPath as string);
+    const modelPaths = [
+      "/models/built_in_bookshelf.glb",
+      "/models/kitchen_cabinets.glb",
+      "/models/wall_fireplace.glb",
+      "/models/wall_tv_unit.glb",
+      "/models/closet_wardrobe.glb"
+    ];
     
-    // Create an array of unique model paths
-    const uniqueModelPaths = Array.from(new Set(modelPaths));
-    
-    // Preload each model
-    uniqueModelPaths.forEach(modelPath => {
-      try {
-        useGLTF.preload(modelPath);
-        console.log(`Preloaded furniture model: ${modelPath}`);
-      } catch (error) {
-        console.warn(`Failed to preload model: ${modelPath}`, error);
-      }
+    modelPaths.forEach(path => {
+      useGLTF.preload(path);
     });
-  }, [roomData.furniture]);
-
-  // Filter furniture to handle fixed elements with 3D models separately
-  const { standardFurniture, modelFurniture } = useMemo(() => {
-    return {
-      // Regular furniture items (no 3D models)
-      standardFurniture: roomData.furniture.filter(item => !item.modelPath),
-      
-      // Furniture items with 3D models
-      modelFurniture: roomData.furniture.filter(item => item.modelPath)
-    };
-  }, [roomData.furniture]);
-
-  // Render function for model-based furniture
-  const renderModelFurniture = (furniture: any, index: number) => {
-    // Load the model
-    const { scene } = useGLTF(furniture.modelPath as string);
-    
-    // Clone the model scene to avoid reference issues
-    const clonedScene = useMemo(() => {
-      return scene.clone();
-    }, [scene]);
-    
-    return (
-      <group
-        key={`model-furniture-${index}`}
-        position={[furniture.position.x, furniture.position.y, furniture.position.z]}
-        rotation={[0, furniture.rotation * Math.PI / 180, 0]}
-        scale={[furniture.scale, furniture.scale, furniture.scale]}
-      >
-        <primitive object={clonedScene} />
-      </group>
-    );
-  };
-
+  }, []);
+  
+  // Render all furniture items
   return (
-    <>
-      {/* Render standard furniture as draggable objects */}
-      {standardFurniture.map((furniture, index) => (
+    <group>
+      {roomData.furniture.map((item, index) => (
         <DraggableFurniture 
-          key={`furniture-${index}`} 
-          furniture={furniture} 
-          index={roomData.furniture.indexOf(furniture)}
+          key={`furniture-${index}`}
+          furniture={item} 
+          index={index} 
         />
       ))}
-      
-      {/* Render model-based furniture */}
-      {modelFurniture.map((furniture, index) => renderModelFurniture(furniture, index))}
-    </>
+    </group>
   );
 };
 
