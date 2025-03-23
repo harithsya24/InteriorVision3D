@@ -100,10 +100,18 @@ export const ikeaProductToFurniture = (product: IkeaProduct, position = { x: 0, 
     scale: 1,
     isFixed: false,
     ikeaProductId: product.id,
-    productName: product.name,
-    productPrice: product.price,
-    productUrl: product.productUrl,
-    dimensions: product.dimensions
+    productInfo: {
+      name: product.name,
+      brand: "IKEA",
+      price: product.price,
+      currency: "USD",
+      url: product.productUrl,
+      dimensions: {
+        width: product.dimensions.width,
+        height: product.dimensions.height,
+        depth: product.dimensions.depth
+      }
+    }
   };
 };
 

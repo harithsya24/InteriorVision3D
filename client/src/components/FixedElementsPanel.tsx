@@ -21,7 +21,8 @@ const FixedElementsPanel: React.FC = () => {
   const allElements = FixedElementsService.getAvailableFixedElements();
   
   // Get unique categories for filtering
-  const categories = ["all", ...new Set(allElements.map(item => item.category))];
+  const uniqueCategories = Array.from(new Set(allElements.map(item => item.category)));
+  const categories = ["all", ...uniqueCategories];
   
   // Filter elements by selected category
   const filteredElements = selectedCategory === "all" 
