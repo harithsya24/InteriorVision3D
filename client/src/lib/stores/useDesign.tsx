@@ -41,6 +41,16 @@ export type Furniture = {
   rotation: number;
   color: string;
   scale: number;
+  isFixed?: boolean;
+  ikeaProductId?: string;
+  productName?: string;
+  productPrice?: number;
+  productUrl?: string;
+  dimensions?: {
+    width: number;
+    height: number;
+    depth: number;
+  };
 };
 
 // Window type
