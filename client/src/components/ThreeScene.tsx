@@ -10,6 +10,7 @@ import {
 } from "@react-three/drei";
 import { useDesign } from "../lib/stores/useDesign";
 import RoomModel from "../models/RoomModel";
+import RoomFurniture from "./RoomFurniture";
 import ModelPreloader from "./ModelPreloader";
 import { useKeyboardControls } from "@react-three/drei";
 import { Controls } from "./Navigation";
@@ -168,6 +169,9 @@ const ThreeScene = () => {
       
       {/* The main room model */}
       <RoomModel />
+      
+      {/* Furniture items */}
+      <RoomFurniture />
       
       {/* Preload 3D models in background */}
       <ModelPreloader />
