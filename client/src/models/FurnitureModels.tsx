@@ -1,6 +1,38 @@
 import * as THREE from "three";
-import { useRef } from "react";
-import { useDesign } from "../lib/stores/useDesign";
+import { useRef, useState, useEffect, Suspense } from "react";
+import { useDesign, Furniture } from "../lib/stores/useDesign";
+import { useGLTF } from "@react-three/drei";
+import { GLTF } from "three-stdlib";
+
+// Preload the 3D models for fixed architectural elements
+useGLTF.preload('/models/built_in_bookshelf.glb');
+useGLTF.preload('/models/kitchen_cabinets.glb');
+useGLTF.preload('/models/wall_fireplace.glb');
+
+// Custom model loader component
+const Model = ({ modelPath, position, rotation, scale = 1 }: { 
+  modelPath: string, 
+  position: [number, number, number], 
+  rotation: [number, number, number],
+  scale?: number 
+}) => {
+  const { scene } = useGLTF(modelPath) as GLTF & {
+    scene: THREE.Group
+  };
+  
+  const clonedScene = scene.clone();
+  
+  return (
+    <primitive 
+      object={clonedScene} 
+      position={position}
+      rotation={rotation}
+      scale={[scale, scale, scale]}
+      castShadow
+      receiveShadow
+    />
+  );
+};
 
 const FurnitureModels = () => {
   const { roomData } = useDesign();
@@ -201,8 +233,8 @@ const FurnitureModels = () => {
           <meshStandardMaterial color={color} metalness={0.2} roughness={0.8} />
         </mesh>
         {/* Handle */}
-        <mesh position={[0.4, 1, 0.28]} castShadow receiveShadow>
-          <cylinderGeometry args={[0.02, 0.02, 0.1]} rotation={[Math.PI / 2, 0, 0]} />
+        <mesh position={[0.4, 1, 0.28]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[0.02, 0.02, 0.1]} />
           <meshStandardMaterial color="#aaaaaa" metalness={0.8} roughness={0.2} />
         </mesh>
       </group>
@@ -286,8 +318,8 @@ const FurnitureModels = () => {
           <meshStandardMaterial color="#777777" />
         </mesh>
         {/* Lamp shade */}
-        <mesh position={[0, 1.4, 0]} castShadow receiveShadow>
-          <coneGeometry args={[0.25, 0.4, 32]} rotation={[Math.PI, 0, 0]} />
+        <mesh position={[0, 1.4, 0]} rotation={[Math.PI, 0, 0]} castShadow receiveShadow>
+          <coneGeometry args={[0.25, 0.4, 32]} />
           <meshStandardMaterial color={color} />
         </mesh>
         {/* Light source */}
@@ -336,35 +368,88 @@ const FurnitureModels = () => {
     );
   };
   
-  // Return the furniture items based on their types
+  // Function to render a specific furniture item
+  const renderFurniture = (item: Furniture, index: number) => {
+    // Check if this is a fixed element with a 3D model
+    if (item.isFixed && item.modelPath) {
+      return (
+        <Suspense 
+          key={`model-${index}`}
+          fallback={
+            <mesh 
+              position={[item.position.x, item.position.y, item.position.z]}
+              castShadow
+              receiveShadow
+            >
+              <boxGeometry args={[1, 1, 1]} />
+              <meshStandardMaterial color={item.color} />
+            </mesh>
+          }
+        >
+          <Model 
+            modelPath={item.modelPath}
+            position={[item.position.x, item.position.y, item.position.z]}
+            rotation={[0, item.rotation * Math.PI / 180, 0]}
+            scale={item.scale}
+          />
+        </Suspense>
+      );
+    }
+    
+    // Otherwise render built-in furniture models
+    switch (item.type) {
+      case 'sofa':
+        return <group key={`furniture-${index}`}>{createSofa(item.position, item.rotation, item.color)}</group>;
+      case 'chair':
+        return <group key={`furniture-${index}`}>{createChair(item.position, item.rotation, item.color)}</group>;
+      case 'table':
+        return <group key={`furniture-${index}`}>{createTable(item.position, item.rotation, item.color)}</group>;
+      case 'bed':
+        return <group key={`furniture-${index}`}>{createBed(item.position, item.rotation, item.color)}</group>;
+      case 'desk':
+        return <group key={`furniture-${index}`}>{createDesk(item.position, item.rotation, item.color)}</group>;
+      case 'cabinet':
+        return <group key={`furniture-${index}`}>{createCabinet(item.position, item.rotation, item.color)}</group>;
+      case 'bookshelf':
+        return <group key={`furniture-${index}`}>{createBookshelf(item.position, item.rotation, item.color)}</group>;
+      case 'lamp':
+        return <group key={`furniture-${index}`}>{createLamp(item.position, item.rotation, item.color)}</group>;
+      case 'plant':
+        return <group key={`furniture-${index}`}>{createPlant(item.position, item.rotation, item.color)}</group>;
+      case 'rug':
+        return <group key={`furniture-${index}`}>{createRug(item.position, item.rotation, item.color)}</group>;
+      case 'fireplace':
+        // Use a fallback model if no 3D model is specified
+        return <group key={`furniture-${index}`}>
+          <mesh 
+            position={[item.position.x, item.position.y + 0.5, item.position.z]}
+            rotation={[0, item.rotation * Math.PI / 180, 0]}
+            castShadow 
+            receiveShadow
+          >
+            <boxGeometry args={[1.2, 1, 0.4]} />
+            <meshStandardMaterial color={item.color} />
+          </mesh>
+        </group>;
+      default:
+        return <group key={`furniture-${index}`}>
+          <mesh 
+            position={[item.position.x, item.position.y + 0.5, item.position.z]}
+            rotation={[0, item.rotation * Math.PI / 180, 0]}
+            castShadow 
+            receiveShadow
+          >
+            <boxGeometry args={[1, 1, 1]} />
+            <meshStandardMaterial color={item.color} />
+          </mesh>
+        </group>;
+    }
+  };
+  
+  // Return the furniture items
   return (
     <group>
-      {roomData.furniture.map((item, index) => {
-        switch (item.type) {
-          case 'sofa':
-            return createSofa(item.position, item.rotation, item.color);
-          case 'chair':
-            return createChair(item.position, item.rotation, item.color);
-          case 'table':
-            return createTable(item.position, item.rotation, item.color);
-          case 'bed':
-            return createBed(item.position, item.rotation, item.color);
-          case 'desk':
-            return createDesk(item.position, item.rotation, item.color);
-          case 'cabinet':
-            return createCabinet(item.position, item.rotation, item.color);
-          case 'bookshelf':
-            return createBookshelf(item.position, item.rotation, item.color);
-          case 'lamp':
-            return createLamp(item.position, item.rotation, item.color);
-          case 'plant':
-            return createPlant(item.position, item.rotation, item.color);
-          case 'rug':
-            return createRug(item.position, item.rotation, item.color);
-          default:
-            return null;
-        }
-      })}
+      {roomData.furniture.map((item, index) => renderFurniture(item, index))}
     </group>
   );
 };
