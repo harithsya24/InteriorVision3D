@@ -41,15 +41,20 @@ export type Furniture = {
   rotation: number;
   color: string;
   scale: number;
-  isFixed?: boolean;
+  isFixed: boolean;
+  modelPath?: string; // Path to GLB model if available
   ikeaProductId?: string;
-  productName?: string;
-  productPrice?: number;
-  productUrl?: string;
-  dimensions?: {
-    width: number;
-    height: number;
-    depth: number;
+  productInfo?: {
+    name: string;
+    brand: string;
+    price: number;
+    currency: string;
+    url: string;
+    dimensions: {
+      width: number;
+      height: number;
+      depth: number;
+    };
   };
 };
 
