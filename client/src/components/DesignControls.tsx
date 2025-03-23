@@ -4,6 +4,8 @@ import { NavigationInfo } from "./Navigation";
 import MaterialSelector from "./MaterialSelector";
 import LightingControls from "./LightingControls";
 import FurniturePanel from "./FurniturePanel";
+import IkeaCatalogPanel from "./IkeaCatalogPanel";
+import FixedElementsPanel from "./FixedElementsPanel";
 import { Button } from "./ui/button";
 import {
   Tabs,
@@ -35,10 +37,12 @@ const DesignControls = () => {
           <h2 className="text-xl font-bold mb-4 border-b pb-2">Interior Design Controls</h2>
 
           <Tabs defaultValue="materials">
-            <TabsList className="grid grid-cols-3 mb-4">
+            <TabsList className="grid grid-cols-5 mb-4">
               <TabsTrigger value="materials">Materials</TabsTrigger>
               <TabsTrigger value="lighting">Lighting</TabsTrigger>
               <TabsTrigger value="furniture">Furniture</TabsTrigger>
+              <TabsTrigger value="fixed">Fixed</TabsTrigger>
+              <TabsTrigger value="ikea">IKEA</TabsTrigger>
             </TabsList>
 
             <TabsContent value="materials" className="space-y-4">
@@ -51,6 +55,14 @@ const DesignControls = () => {
 
             <TabsContent value="furniture" className="space-y-4">
               <FurniturePanel />
+            </TabsContent>
+            
+            <TabsContent value="fixed" className="space-y-4">
+              <FixedElementsPanel />
+            </TabsContent>
+            
+            <TabsContent value="ikea" className="space-y-4">
+              <IkeaCatalogPanel />
             </TabsContent>
           </Tabs>
 
